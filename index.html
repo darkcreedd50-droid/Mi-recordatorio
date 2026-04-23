@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Recordatorio con Calendario</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f3; padding: 20px; color: #333; }
+        .container { max-width: 400px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; font-size: 20px; margin-bottom: 20px; }
+        label { display: block; text-align: left; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        input { width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        input:focus { border-color: #3498db; outline: none; }
+        button { width: 100%; background: #27ae60; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #219150; }
+        .aviso-activo { margin-top: 20px; padding: 15px; background: #ff7675; color: white; border-radius: 10px; display: none; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📅 Programar Recordatorio</h2>
+    
+    <label>1. ¿Qué debo recordarte?</label>
+    <input type="text" id="evento" placeholder="Ej: Pagar cuenta, curso, etc.">
+
+    <label>2. Elige fecha y hora en el calendario:</label>
+    <input type="datetime-local" id="fechaCalendario">
+
+    <button onclick="activarAlarma()">PROGRAMAR FECHA</button>
+    
+    <div id="estado" style="margin-top: 15px; font-size: 14px; color: #7f8c8d;"></div>
+    <div id="avisoVisual" class="aviso-activo"></div>
+</div>
+
+<script>
+    // Pedir permiso para que la app pueda "hablar" al celular
+    if ("Notification" in window) { Notification.requestPermission(); }
+
+    function activarAlarma() {
+        const desc = document.getElementById('evento').value;
+        const fechaElegida = document.getElementById('fechaCalendario').value;
+
+        if (!desc || !fechaElegida) {
+            alert("Por favor, selecciona una fecha del calendario y escribe el evento.");
+            return;
+        }
+
+        // Guardar en la memoria del celu para que no se borre al cerrar
+        localStorage.setItem('mi_evento_urgente', desc);
+        localStorage.setItem('mi_fecha_urgente', fechaElegida);
+        
+        document.getElementById('estado').innerText = "⏰ Guardado para el: " + fechaElegida.replace('T', ' ');
+        document.getElementById('avisoVisual').style.display = "none";
+    }
+
+    function chequearReloj() {
+        const ahora = new Date().getTime();
+        const programado = new Date(localStorage.getItem('mi_fecha_urgente')).getTime();
+        const texto = localStorage.getItem('mi_evento_urgente');
+
+        if (programado && ahora >= programado) {
+            // Mostrar aviso en la pantalla
+            const cajaAviso = document.getElementById('avisoVisual');
+            cajaAviso.style.display = "block";
+            cajaAviso.innerHTML = "<strong>¡ATENCIÓN!</strong><br>" + texto;
+
+            // Lanzar notificación al sistema (aparece arriba en el celu)
+            if (Notification.permission === "granted") {
+                new Notification("RECORDATORIO", {
+                    body: texto,
+                    requireInteraction: true, // Se queda fija hasta que la toques
+                    icon: "https://cdn-icons-png.flaticon.com/512/311/311022.png"
+                });
+            }
+        }
+    }
+
+    // Revisar el calendario cada 30 segundos
+    setInterval(chequearReloj, 30000);
+</script>
+
+</body>
+</html>
